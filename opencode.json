@@ -1,0 +1,60 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "C:\\Users\\Sharps\\.config\\opencode\\AGENTS.md",
+    "C:\\Users\\Sharps\\.config\\opencode\\OPALE.md"
+  ],
+  "permission": {
+    "websearch": "allow",
+    "webfetch": "allow"
+  },
+  "default_agent": "local-team",
+  "model": "ollama/local-gemma4-12b:latest",
+  "small_model": "ollama/local-qwen35-9b:latest",
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama (local)",
+      "options": {
+        "baseURL": "http://localhost:11434/v1"
+      },
+      "models": {
+        "qwen25-coder-opencode:14b-q5": {
+          "name": "Qwen2.5 Coder 14B Q5 (OpenCode)"
+        },
+        "gemma4-opencode:12b": {
+          "name": "Gemma 4 12B (OpenCode)"
+        },
+        "gemma4:12b": {
+          "name": "Gemma 4 12B"
+        },
+        "local-gemma4-12b:latest": {
+          "name": "Local Team - Gemma 4 12B 16K",
+          "limit": {
+            "context": 16384,
+            "output": 8192
+          }
+        },
+        "local-qwen35-9b:latest": {
+          "name": "Local Team - Qwen 3.5 9B 16K",
+          "limit": {
+            "context": 16384,
+            "output": 8192
+          }
+        },
+        "gemma4:26b": {
+          "name": "Gemma 4 26B A4B (manuel)"
+        },
+        "qwen3.5:27b": {
+          "name": "Qwen 3.5 27B (manuel)"
+        },
+        "devstral-small-2:24b": {
+          "name": "Devstral Small 2 24B (manuel)"
+        },
+        "qwen3.5:9b": {
+          "name": "Qwen 3.5 9B"
+        }
+      }
+    }
+  }
+}
