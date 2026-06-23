@@ -24,7 +24,7 @@ Local-Team -> opale_run -> opale.ps1 -> opale_runner.py -> agents OpenCode
 `opale.ps1 -PromptFile`. Le prompt n'est donc pas passe directement comme argument
 console, ce qui evite les problemes de quoting, d'encodage et de longueur.
 Pour les projets complets, `local-team` utilise `opale_run` en mode asynchrone et
-retourne immediatement le PID, le `PROMPT_FILE` et le `RUN_DIR_EXPECTED`.
+retourne immediatement le PID, le `PROMPT_FILE` et le `RUN_DIR`.
 
 Le tool est deploye dans :
 
