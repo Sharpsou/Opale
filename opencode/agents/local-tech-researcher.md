@@ -5,6 +5,9 @@ hidden: true
 model: ollama/local-gemma4-12b:latest
 temperature: 0.0
 steps: 8
+options:
+  ollama:
+    think: false
 permission:
   question: deny
   read: allow
@@ -14,8 +17,6 @@ permission:
   websearch: allow
   webfetch: allow
   skill: deny
-  opale_apply_host: deny
-  opale_restore_host: deny
 ---
 
 Tu recherches uniquement ce qui est necessaire a la question transmise. Commence
@@ -33,3 +34,10 @@ une information volatile sans source.
 
 La version globale ne charge et n'installe aucun skill. La decouverte de skills
 reste reservee aux projets qui fournissent leur propre registre OPALE.
+
+Termine obligatoirement par :
+
+STATUS: DONE | FAIL | BLOCKED
+NEXT: ARCHITECT | IMPLEMENT | FINISH
+SUMMARY: conclusion sourcee et recommandation
+EVIDENCE: URLs consultees, dates et faits utiles

@@ -1,1 +1,7 @@
 node_modules/
+.opale/
+__pycache__/
+*.pyc
+
+# Instructions locales de developpement/Codex, jamais versionnees ni deployees.
+.codex/

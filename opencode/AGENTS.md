@@ -1,6 +1,8 @@
-# Instructions globales OpenCode
+# OPALE - Instructions globales OpenCode
 
-Ces regles s'appliquent a toutes les sessions OpenCode sur cette machine.
+OPALE signifie **Orchestration Pilotee d'Agents Locaux Encadres**. Ce fichier est
+l'unique source d'instructions globales OPALE deployee dans OpenCode. Ces regles
+s'appliquent a toutes les sessions OpenCode sur cette machine.
 
 ## Regles anti-hallucination
 
@@ -62,14 +64,26 @@ Ces regles s'appliquent a toutes les sessions OpenCode sur cette machine.
 
 ## Workflow OPALE global
 
-- La version active est `OPALE v0.2 Prompt global`, un workflow anti-erreurs et non
-  une sandbox systeme.
-- `local-team` route les changements vers `local-code-worker`, puis appelle toujours
-  `local-verifier` apres une tentative de modification.
-- Le worker opere dans une copie temporaire avec les outils `opale_*`. Toute
-  application demande une approbation humaine.
-- Le patch exact applique est conserve dans `.opale/last-change.patch` ; le
-  verificateur doit le lire avant de rendre son verdict.
-- Un premier `FAIL` autorise une seule correction, suivie d'une verification finale.
+- La version active est `OPALE v0.3 Machine d'etat globale`.
+- Pour les projets complets ou multi-fichiers, le chemin prioritaire est le tool
+  global `opale_run`, qui lance le runner deployee dans
+  `%USERPROFILE%\.config\opencode\opale-runner`.
+- Le runner pilote les etats `INTAKE`, `DISCOVER`, `ARCHITECTURE`, `IMPLEMENT`,
+  `BUILD`, `FUNCTIONAL_VERIFY`, `REPAIR`, `FINAL_REVIEW`, `DONE` et `FAILED`.
+- Le runner appelle les agents primaires dedies `runner-product-architect`,
+  `runner-code-worker` et `runner-verifier`.
+- Le runner ne croit jamais uniquement le recit d'un agent : il controle fichiers,
+  `git status`, `git diff`, commandes executees, logs et verdict du verificateur.
+- Les lectures et explications triviales restent directes et ne sont pas deleguees.
+- `local-team` reste l'agent interactif par defaut pour les petites taches, mais
+  il doit appeler `opale_run` en mode asynchrone lorsqu'une demande implique un
+  projet complet.
+- `local-team` route les changements simples vers `local-code-worker`, puis appelle
+  toujours `local-verifier` apres une tentative de modification.
+- Le worker modifie directement les fichiers du projet avec les outils OpenCode.
+  Une sortie d'outil et la presence du fichier sont les seules preuves d'ecriture.
+- Le verificateur reste en lecture seule, inspecte les fichiers reels et execute
+  les controles pertinents apres chaque tentative de modification.
+- Une sortie vide ou sans preuves est un echec.
 - Les instructions et plugins locaux d'un projet priment sur cette version globale.
 - Aucun skill n'est installe ou active globalement par OPALE.
