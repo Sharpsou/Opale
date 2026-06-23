@@ -125,6 +125,10 @@ Utilise le tool opale_run pour creer un jeu Pong web complet contre une IA avec 
 
 Un vrai lancement affiche un appel d'outil `opale_run` dans le fil OpenCode, puis
 cree un dossier `.opale\runs` dans le projet cible.
+Pour obtenir l'avancement ou le resultat directement dans la discussion OpenCode,
+demander ensuite `statut OPALE` ou fournir le `RUN_DIR` affiche par `opale_run`.
+`local-team` appelle alors `opale_status`, qui lit `summary.json` et `run.jsonl`
+sans relancer le runner.
 
 Le runner suit les etats :
 
@@ -169,6 +173,18 @@ $run = Get-ChildItem "D:\prog\PongW\.opale\runs" -Directory |
   Select-Object -First 1
 
 Get-Content "$($run.FullName)\summary.json"
+```
+
+Depuis OpenCode, le meme diagnostic peut etre demande dans le chat avec :
+
+```text
+statut OPALE
+```
+
+ou :
+
+```text
+statut OPALE pour D:\prog\PongW\.opale\runs\<timestamp>
 ```
 
 Dans `summary.json`, verifier `status`, `states`, `files_changed`,

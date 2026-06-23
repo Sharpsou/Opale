@@ -26,11 +26,15 @@ Local-Team -> opale_run -> opale.ps1 -> opale_runner.py -> Ollama natif + disque
 console, ce qui evite les problemes de quoting, d'encodage et de longueur.
 Pour les projets complets, `local-team` utilise `opale_run` en mode asynchrone et
 retourne immediatement le PID, le `PROMPT_FILE` et le `RUN_DIR`.
+Pour afficher ensuite l'avancement ou le resultat dans la discussion, demander
+`statut OPALE` : `local-team` appelle le tool `opale_status`, qui lit le dernier
+run du projet ou le `RUN_DIR` fourni.
 
 Le tool est deploye dans :
 
 ```text
 %USERPROFILE%\.config\opencode\tools\opale_run.js
+%USERPROFILE%\.config\opencode\tools\opale_status.js
 ```
 
 ## Etats

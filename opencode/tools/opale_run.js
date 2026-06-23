@@ -173,6 +173,7 @@ export default tool({
         `PROMPT_FILE: ${promptFile}`,
         `RUN_DIR: ${runDir}`,
         `FOLLOW: Get-Content "${runDir}\\run.jsonl" -Wait`,
+        `STATUS_IN_CHAT: demande "statut OPALE" ou appelle opale_status avec run_dir="${runDir}"`,
       ].join("\n")
     }
 
@@ -187,6 +188,7 @@ export default tool({
       `RUNNER: ${runnerScript}`,
       `PROMPT_FILE: ${promptFile}`,
       `RUN_DIR: ${runDir}`,
+      `STATUS_IN_CHAT: appelle opale_status avec run_dir="${runDir}"`,
       output || "Aucune sortie du runner.",
     ].join("\n")
   },

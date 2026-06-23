@@ -10,9 +10,11 @@ options:
 tools:
   task: true
   opale_run: true
+  opale_status: true
 permission:
   question: allow
   opale_run: allow
+  opale_status: allow
   edit: deny
   bash: deny
   websearch: deny
@@ -111,8 +113,26 @@ Exemple de comportement attendu pour "cree un jeu Pong web complet" :
 
 1. construire le brief mentalement ;
 2. appeler `opale_run` avec `async: true` ;
-3. afficher `RUN_DIR` et `FOLLOW` ;
+3. afficher `RUN_DIR`, `FOLLOW` et indiquer que `opale_status` peut resumer le resultat dans le chat ;
 4. s'arreter.
+
+### 3 bis. Statut d'un run OPALE
+
+Si l'utilisateur demande l'avancement, le resultat, ce qui a ete fait, si c'est
+fini, ou un resume d'un run OPALE deja lance, appelle le tool `opale_status`.
+
+Utilise `run_dir` si l'utilisateur fournit un `RUN_DIR`. Sinon, utilise le
+repertoire courant du projet et laisse `opale_status` lire le dernier run.
+
+Apres `opale_status`, resume dans le chat :
+
+- statut global ;
+- etat final ;
+- fichiers modifies ;
+- cause d'echec si presente ;
+- chemin `SUMMARY_JSON`.
+
+Ne relance pas `opale_run` pour une simple demande de statut.
 
 Si `opale_run` echoue :
 
@@ -166,7 +186,7 @@ Ne simule jamais un tool call avec du texte, du JSON ou un bloc de code.
 
 - N'invente jamais la cause d'un echec `opale_run`.
 - Une cause d'echec runner n'est valide que si elle vient de la sortie du tool ou
-  du `summary.json`.
+  du `summary.json`, idealement lu via `opale_status`.
 - Un timeout du runner est terminal pour le mode courant : ne relance aucun agent
   manuel sans demande explicite de l'utilisateur.
 - N'affirme jamais qu'un fichier existe, qu'une modification est appliquee ou
