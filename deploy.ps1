@@ -12,6 +12,9 @@ $RunnerRuntime = Join-Path $Source "runner"
 $Target = [System.IO.Path]::GetFullPath($Target)
 $RunnerTarget = Join-Path $Target "opale-runner"
 $ExistingModels = $null
+$DeprecatedManagedModels = @(
+    "local-qwen35-9b:latest"
+)
 $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 
 if ($Runtime.TrimEnd("\") -eq $Target.TrimEnd("\")) {
@@ -70,30 +73,10 @@ if (Test-Path -LiteralPath $RunnerCache) {
     Remove-Item -LiteralPath $RunnerCache -Recurse -Force
 }
 
-$OpencodeCommand = Get-Command opencode -ErrorAction SilentlyContinue
-$OpencodeBin = $null
-if ($OpencodeCommand) {
-    $OpencodeBin = $OpencodeCommand.Source
-    if ($OpencodeBin -like "*.ps1") {
-        $CmdCandidate = [System.IO.Path]::ChangeExtension($OpencodeBin, ".cmd")
-        if (Test-Path -LiteralPath $CmdCandidate) {
-            $OpencodeBin = $CmdCandidate
-        }
-    }
-    if ($OpencodeBin -like "*.cmd") {
-        $CmdDirectory = Split-Path -Parent $OpencodeBin
-        $ExeCandidate = Join-Path $CmdDirectory "node_modules\opencode-ai\bin\opencode.exe"
-        if (Test-Path -LiteralPath $ExeCandidate) {
-            $OpencodeBin = $ExeCandidate
-        }
-    }
+$LegacyRunnerEnv = Join-Path $RunnerTarget "opale.env.json"
+if (Test-Path -LiteralPath $LegacyRunnerEnv) {
+    Remove-Item -LiteralPath $LegacyRunnerEnv -Force
 }
-$RunnerEnv = [ordered]@{
-    opencode_bin = $OpencodeBin
-    generated_at = (Get-Date).ToString("s")
-}
-$RunnerEnvJson = $RunnerEnv | ConvertTo-Json -Depth 10
-[System.IO.File]::WriteAllText((Join-Path $RunnerTarget "opale.env.json"), $RunnerEnvJson, $Utf8NoBom)
 
 $ConfigPath = Join-Path $Target "opencode.json"
 $Config = Get-Content -Raw -LiteralPath $ConfigPath | ConvertFrom-Json
@@ -102,6 +85,9 @@ $Config.instructions = @(
 )
 if ($ExistingModels) {
     foreach ($Property in $ExistingModels.PSObject.Properties) {
+        if ($DeprecatedManagedModels -contains $Property.Name) {
+            continue
+        }
         if (-not $Config.provider.ollama.models.PSObject.Properties[$Property.Name]) {
             $Config.provider.ollama.models | Add-Member -NotePropertyName $Property.Name -NotePropertyValue $Property.Value
         }
@@ -111,10 +97,23 @@ $ConfigJson = $Config | ConvertTo-Json -Depth 100
 [System.IO.File]::WriteAllText($ConfigPath, $ConfigJson, $Utf8NoBom)
 
 # Nettoie uniquement les anciens fichiers geres par OPALE avant cette structure.
-@("OPALE.md", ".gitignore", "plugin", "plugins", "scripts", "package.json", "package-lock.json", "agents/agents") | ForEach-Object {
+@("OPALE.md", ".gitignore", "plugin", "plugins", "scripts", "agents/agents") | ForEach-Object {
     $LegacyPath = Join-Path $Target $_
     if (Test-Path -LiteralPath $LegacyPath) {
         Remove-Item -LiteralPath $LegacyPath -Recurse -Force
+    }
+}
+
+# Nettoie les agents runner historiques. Le runner Python n'appelle plus
+# `opencode run`; il pilote directement Ollama natif et le disque.
+@(
+    "agents/runner-product-architect.md",
+    "agents/runner-code-worker.md",
+    "agents/runner-verifier.md"
+) | ForEach-Object {
+    $LegacyAgent = Join-Path $Target $_
+    if (Test-Path -LiteralPath $LegacyAgent) {
+        Remove-Item -LiteralPath $LegacyAgent -Force
     }
 }
 

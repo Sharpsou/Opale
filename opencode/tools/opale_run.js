@@ -47,6 +47,10 @@ function runProcess(command, args) {
   })
 }
 
+function psQuote(value) {
+  return `'${String(value).replaceAll("'", "''")}'`
+}
+
 export default tool({
   description:
     "Lance la machine d'etat OPALE globale pour realiser un projet complet dans le repertoire courant ou indique.",
@@ -74,6 +78,10 @@ export default tool({
     const promptFile = join(promptDir, `${randomUUID()}.txt`)
     await writeFile(promptFile, args.prompt, "utf8")
     const runDir = join(project, ".opale", "runs", timestamp())
+    const stdoutDir = join(runDir, "stdout")
+    const stderrDir = join(runDir, "stderr")
+    await mkdir(stdoutDir, { recursive: true })
+    await mkdir(stderrDir, { recursive: true })
     const psArgs = [
       "-NoProfile",
       "-ExecutionPolicy",
@@ -91,16 +99,75 @@ export default tool({
     ]
 
     if (asyncMode) {
-      const child = spawn("powershell", psArgs, {
-        detached: true,
-        windowsHide: true,
-        shell: false,
-        stdio: "ignore",
-      })
-      child.unref()
+      const bootstrap = {
+        mode: "async",
+        project,
+        runner: runnerScript,
+        prompt_file: promptFile,
+        run_dir: runDir,
+        args: psArgs,
+        started_at: new Date().toISOString(),
+      }
+      await writeFile(join(runDir, "bootstrap.json"), JSON.stringify(bootstrap, null, 2), "utf8")
+      await writeFile(
+        join(runDir, "run.jsonl"),
+        `${JSON.stringify({
+          time: new Date().toISOString(),
+          state: "BOOTSTRAP",
+          status: "STARTED",
+          details: {
+            project,
+            runner: runnerScript,
+            prompt_file: promptFile,
+          },
+        })}\n`,
+        "utf8",
+      )
+      const bootstrapStdout = join(stdoutDir, "00-bootstrap.stdout.txt")
+      const bootstrapStderr = join(stderrDir, "00-bootstrap.stderr.txt")
+      const launchScript = join(runDir, "bootstrap-launch.ps1")
+      const launchContent = [
+        "$ErrorActionPreference = 'Stop'",
+        "$argsList = @(",
+        "  '-NoProfile',",
+        "  '-ExecutionPolicy', 'Bypass',",
+        `  '-File', ${psQuote(runnerScript)},`,
+        `  '-Project', ${psQuote(project)},`,
+        `  '-PromptFile', ${psQuote(promptFile)},`,
+        `  '-MaxRepairs', ${psQuote(String(maxRepairs))},`,
+        `  '-RunDir', ${psQuote(runDir)}`,
+        ")",
+        `$p = Start-Process -FilePath 'powershell' -ArgumentList $argsList -RedirectStandardOutput ${psQuote(bootstrapStdout)} -RedirectStandardError ${psQuote(bootstrapStderr)} -WindowStyle Hidden -PassThru`,
+        "Write-Output $p.Id",
+      ].join("\n")
+      await writeFile(launchScript, launchContent, "utf8")
+      const launch = await runProcess("powershell", [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        launchScript,
+      ])
+      const pid = (launch.stdout || "").trim().split(/\s+/).pop() || "unknown"
+      if (launch.code !== 0) {
+        await writeFile(join(stderrDir, "00-launch-error.txt"), `${launch.stdout}\n${launch.stderr}\n`, "utf8")
+        return [
+          "OPALE_RUN_MODE: async",
+          "OPALE_CONTROL: launch_failed",
+          "LOCAL_TEAM_NEXT_ACTION: report_failure_only; do_not_fallback_to_manual_agents",
+          `PROJECT: ${project}`,
+          `RUNNER: ${runnerScript}`,
+          `PROMPT_FILE: ${promptFile}`,
+          `RUN_DIR: ${runDir}`,
+          `LAUNCH_EXIT_CODE: ${launch.code}`,
+          `${launch.stdout || ""}${launch.stderr || ""}`.trim(),
+        ].join("\n")
+      }
       return [
         "OPALE_RUN_MODE: async",
-        `PID: ${child.pid}`,
+        "OPALE_CONTROL: transferred_to_runner",
+        "LOCAL_TEAM_NEXT_ACTION: stop_after_reporting_paths; do_not_call_task_agents",
+        `PID: ${pid}`,
         `PROJECT: ${project}`,
         `RUNNER: ${runnerScript}`,
         `PROMPT_FILE: ${promptFile}`,
@@ -113,6 +180,8 @@ export default tool({
     const output = `${result.stdout || ""}${result.stderr || ""}`.trim()
     return [
       "OPALE_RUN_MODE: sync",
+      "OPALE_CONTROL: runner_finished",
+      "LOCAL_TEAM_NEXT_ACTION: report_runner_output_only; do_not_fallback_to_manual_agents",
       `OPALE_RUN_EXIT_CODE: ${result.code}`,
       `PROJECT: ${project}`,
       `RUNNER: ${runnerScript}`,

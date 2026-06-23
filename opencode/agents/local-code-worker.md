@@ -1,7 +1,7 @@
 ---
 description: Worker direct qui inspecte, ecrit et teste les fichiers du projet
 mode: subagent
-model: ollama/local-qwen35-9b:latest
+model: ollama/local-gemma4-12b:latest
 temperature: 0.1
 steps: 30
 tools:

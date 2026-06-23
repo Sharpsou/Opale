@@ -70,14 +70,21 @@ s'appliquent a toutes les sessions OpenCode sur cette machine.
   `%USERPROFILE%\.config\opencode\opale-runner`.
 - Le runner pilote les etats `INTAKE`, `DISCOVER`, `ARCHITECTURE`, `IMPLEMENT`,
   `BUILD`, `FUNCTIONAL_VERIFY`, `REPAIR`, `FINAL_REVIEW`, `DONE` et `FAILED`.
-- Le runner appelle les agents primaires dedies `runner-product-architect`,
-  `runner-code-worker` et `runner-verifier`.
-- Le runner ne croit jamais uniquement le recit d'un agent : il controle fichiers,
-  `git status`, `git diff`, commandes executees, logs et verdict du verificateur.
+- Le runner n'appelle plus `opencode run` en sous-processus pour ses etapes
+  internes. Il utilise l'API native Ollama pour produire des plans de fichiers,
+  applique ces fichiers lui-meme, puis verifie l'etat disque.
+- Le runner ne croit jamais uniquement le recit d'un modele : il controle
+  fichiers, `git status`, `git diff`, commandes executees et logs.
 - Les lectures et explications triviales restent directes et ne sont pas deleguees.
 - `local-team` reste l'agent interactif par defaut pour les petites taches, mais
   il doit appeler `opale_run` en mode asynchrone lorsqu'une demande implique un
   projet complet.
+- Pour une demande de creation ou implementation complete, `local-team` ne doit
+  jamais se limiter a une idee, un plan ou une promesse : l'action attendue est
+  un appel reel au tool `opale_run`.
+- Apres un retour `OPALE_RUN_MODE: async`, `local-team` rapporte les chemins de
+  suivi et s'arrete. Il ne bascule pas vers les agents manuels sans demande
+  explicite ulterieure de l'utilisateur.
 - `local-team` route les changements simples vers `local-code-worker`, puis appelle
   toujours `local-verifier` apres une tentative de modification.
 - Le worker modifie directement les fichiers du projet avec les outils OpenCode.

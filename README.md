@@ -4,11 +4,10 @@ OPALE signifie **Orchestration Pilotee d'Agents Locaux Encadres**. Cette version
 `v0.3 Machine d'etat globale` configure OpenCode avec une equipe locale de cinq
 roles et ajoute un runner Python global pour piloter les projets complets.
 
-Le worker modifie directement le projet, puis un verificateur independant inspecte
-les fichiers reels et execute les controles pertinents. Pour les projets complets
-ou multi-fichiers, le runner OPALE devient l'orchestrateur fiable : il appelle les
-agents OpenCode, controle les preuves disque, execute les commandes de profil et
-decide des transitions.
+Pour les projets complets ou multi-fichiers, le runner OPALE devient
+l'orchestrateur fiable : il genere un plan de fichiers via Ollama natif quand
+necessaire, applique lui-meme les fichiers dans le projet reel, controle les
+preuves disque, execute les commandes de profil et decide des transitions.
 
 ## Structure du depot
 
@@ -48,16 +47,14 @@ git clone https://github.com/Sharpsou/Opale.git
 cd Opale
 ```
 
-OPALE utilise Gemma 4 12B pour l'orchestrateur et les roles en lecture, et Qwen
-3.5 9B pour le worker qui modifie directement les fichiers. Les agents Gemma
-desactivent leur mode de raisonnement Ollama afin que les appels d'outils soient
-renvoyes a OpenCode sous forme structuree plutot que racontes dans le raisonnement :
+OPALE utilise Gemma 4 12B pour tous les roles actifs : front-office, architecte,
+worker et verificateur. Cette variante Gemma-only evite que le `small_model`
+OpenCode ou le worker bascule sur un modele qui consomme ses tokens en
+raisonnement sans produire d'appel d'outil exploitable.
 
 ```powershell
 ollama pull gemma4:12b
 ollama cp gemma4:12b local-gemma4-12b
-ollama pull qwen3.5:9b
-ollama cp qwen3.5:9b local-qwen35-9b
 ollama list
 ```
 
@@ -72,9 +69,6 @@ Le script copie les instructions, les agents et le runner dans
 OpenCode utilisera ensuite `local-team` comme agent interactif par defaut.
 Pour les projets complets, `local-team` dispose du tool global `opale_run` et peut
 donc lancer la machine d'etat directement depuis l'interface OpenCode.
-Le deploiement ecrit aussi `opale-runner\opale.env.json` avec le chemin absolu du
-binaire OpenCode detecte, afin que le runner fonctionne meme quand OpenCode est
-lance depuis l'interface graphique Windows avec un `PATH` incomplet.
 Le tool `opale_run` transmet le prompt au runner via un fichier UTF-8 temporaire,
 pas en argument console direct, pour eviter les problemes de quoting,
 d'encodage et de prompts longs.
@@ -140,11 +134,11 @@ INTAKE -> DISCOVER -> ARCHITECTURE -> IMPLEMENT -> BUILD
 ```
 
 Il detecte les profils `web`, `python`, `unity`, `android` et `generic`. Il ne
-croit pas uniquement le texte d'un agent : il controle `git status`, `git diff`,
-les fichiers reels, les commandes executees et le verdict du verificateur.
-Le runner appelle des agents primaires dedies `runner-product-architect`,
-`runner-code-worker` et `runner-verifier`, afin d'eviter le fallback OpenCode vers
-`local-team`.
+croit pas uniquement le texte d'un modele : il controle `git status`, `git diff`,
+les fichiers reels, les commandes executees et ses verifications fonctionnelles.
+Pour eviter les blocages observes avec `opencode run`, le runner n'appelle plus
+les agents `runner-*` comme sous-processus OpenCode. Il appelle Ollama via son API
+native pour les plans de fichiers, puis applique et verifie lui-meme les fichiers.
 
 Les logs sont ecrits dans :
 
@@ -155,13 +149,16 @@ Les logs sont ecrits dans :
 OPALE n'effectue jamais de commit automatique. Git sert uniquement de capteur de
 changements et de garde-fou.
 
+Pour l'evolution cible vers des missions decoupees en plusieurs runs controles,
+voir [`docs/runner-multistep-evolution.md`](docs/runner-multistep-evolution.md).
+
 ## Diagnostic rapide
 
 Verifier que le tool global est deploye :
 
 ```powershell
 Get-ChildItem "$HOME\.config\opencode\tools\opale_run.js"
-Get-Content "$HOME\.config\opencode\opale-runner\opale.env.json"
+Get-ChildItem "$HOME\.config\opencode\opale-runner\opale_runner.py"
 ```
 
 Verifier qu'un run est passe par la machine d'etat :
@@ -174,10 +171,9 @@ $run = Get-ChildItem "D:\prog\PongW\.opale\runs" -Directory |
 Get-Content "$($run.FullName)\summary.json"
 ```
 
-Dans `summary.json`, les commandes OpenCode doivent pointer vers un binaire reel,
-par exemple `D:\npm-global\node_modules\opencode-ai\bin\opencode.exe`. Si le
-resume contient `FileNotFoundError`, redeployer OPALE depuis un terminal ou
-definir explicitement le chemin avec `--opencode-bin`.
+Dans `summary.json`, verifier `status`, `states`, `files_changed`,
+`verification_level` et `failure_reason`. Un run correct doit produire un
+`summary.json` meme en cas d'echec.
 
 ## Mise a jour apres modification du depot
 

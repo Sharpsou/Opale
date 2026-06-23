@@ -1,8 +1,9 @@
 # OPALE Runner
 
-Le runner OPALE est la machine d'etat globale qui pilote OpenCode pour les
-projets complets. Il garde le controle des transitions, tandis que les agents
-OpenCode produisent l'architecture, le code et la verification.
+Le runner OPALE est la machine d'etat globale appelee depuis OpenCode pour les
+projets complets. Il garde le controle des transitions, genere des plans de
+fichiers via l'API native Ollama quand necessaire, applique les fichiers lui-meme
+et verifie l'etat reel du disque.
 
 ## Usage
 
@@ -17,7 +18,7 @@ Depuis l'interface OpenCode, `Local-Team` peut lancer ce runner via le custom to
 global `opale_run`. Pour un projet complet, le comportement attendu est :
 
 ```text
-Local-Team -> opale_run -> opale.ps1 -> opale_runner.py -> agents OpenCode
+Local-Team -> opale_run -> opale.ps1 -> opale_runner.py -> Ollama natif + disque
 ```
 
 `opale_run` ecrit le prompt dans un fichier UTF-8 temporaire et appelle
@@ -32,16 +33,6 @@ Le tool est deploye dans :
 %USERPROFILE%\.config\opencode\tools\opale_run.js
 ```
 
-Le runner lit aussi :
-
-```text
-%USERPROFILE%\.config\opencode\opale-runner\opale.env.json
-```
-
-Ce fichier contient le chemin absolu de `opencode.exe` detecte au deploiement.
-Il evite les erreurs `FileNotFoundError` quand OpenCode est lance depuis une
-interface graphique dont le `PATH` ne contient pas le repertoire npm global.
-
 ## Etats
 
 ```text
@@ -50,10 +41,10 @@ INTAKE -> DISCOVER -> ARCHITECTURE -> IMPLEMENT -> BUILD
 ```
 
 Le runner ne valide jamais uniquement le recit d'un agent. Il combine la sortie
-OpenCode, l'etat du disque, `git status`, `git diff`, les commandes executees et
-les regles du profil projet detecte.
-Il appelle les agents primaires dedies `runner-product-architect`,
-`runner-code-worker` et `runner-verifier`.
+Ollama, l'etat du disque, `git status`, `git diff`, les commandes executees et les
+regles du profil projet detecte. Il n'appelle plus `opencode run` pour ses etapes
+internes, afin d'eviter les blocages de tool-calling constates avec certains
+modeles locaux.
 
 ## Profils
 
@@ -87,5 +78,6 @@ Dans ce fichier, verifier :
 - `failure_reason` : cause exacte en cas d'echec.
 - `files_changed` : fichiers modifies hors `.opale`.
 
-Si `failure_reason` contient `FileNotFoundError`, redeployer OPALE avec
-`deploy.ps1 -Force` depuis un terminal ou lancer `opale.ps1` avec `-OpencodeBin`.
+Si le dossier de run ne progresse pas, inspecter `run.jsonl`, `summary.json` et
+les fichiers `stdout/` et `stderr/`, puis redeployer OPALE avec `deploy.ps1
+-Force` avant de relancer une nouvelle session OpenCode.

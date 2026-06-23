@@ -10,11 +10,10 @@ param(
     [string]$PromptFile,
 
     [int]$MaxRepairs = 2,
-    [int]$TimeoutPlan = 600,
+    [int]$TimeoutPlan = 180,
     [int]$TimeoutImplement = 1800,
     [int]$TimeoutVerify = 900,
     [int]$TimeoutBuild = 900,
-    [string]$OpencodeBin,
     [string]$LogDir,
     [string]$RunDir,
     [switch]$DryRun
@@ -44,10 +43,6 @@ if ($PromptFile) {
     $ArgsList += @("--prompt", $Prompt)
 } else {
     throw "Fournir -Prompt ou -PromptFile."
-}
-
-if ($OpencodeBin) {
-    $ArgsList += @("--opencode-bin", $OpencodeBin)
 }
 
 if ($LogDir) {

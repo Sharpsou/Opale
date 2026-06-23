@@ -9,7 +9,7 @@
   },
   "default_agent": "local-team",
   "model": "ollama/local-gemma4-12b:latest",
-  "small_model": "ollama/local-qwen35-9b:latest",
+  "small_model": "ollama/local-gemma4-12b:latest",
   "provider": {
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",
@@ -20,13 +20,6 @@
       "models": {
         "local-gemma4-12b:latest": {
           "name": "Local Team - Gemma 4 12B 16K",
-          "limit": {
-            "context": 16384,
-            "output": 8192
-          }
-        },
-        "local-qwen35-9b:latest": {
-          "name": "Local Team - Qwen 3.5 9B 16K",
           "limit": {
             "context": 16384,
             "output": 8192
